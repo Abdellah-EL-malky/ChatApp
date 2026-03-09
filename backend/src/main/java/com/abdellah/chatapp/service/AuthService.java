@@ -5,10 +5,13 @@ import com.abdellah.chatapp.entity.User;
 import com.abdellah.chatapp.repository.UserRepository;
 import com.abdellah.chatapp.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 
 @Service
 public class AuthService {
@@ -40,10 +43,17 @@ public class AuthService {
         return new AuthResponse(token, user.getId(), user.getEmail(), user.getUsername(), user.getAvatarColor());
     }
 
-    public AuthResponse login(AuthRequest req) {
-        authManager.authenticate(new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
-        User user = userRepository.findByEmail(req.getEmail()).orElseThrow();
-        String token = jwtUtil.generateToken(user.getEmail());
-        return new AuthResponse(token, user.getId(), user.getEmail(), user.getUsername(), user.getAvatarColor());
+    // ChatApp AuthService.java
+public AuthResponse login(AuthRequest req) {
+    try {
+        authManager.authenticate(
+            new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
+        );
+    } catch (Exception e) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
     }
+    User user = userRepository.findByEmail(req.getEmail()).orElseThrow();
+    String token = jwtUtil.generateToken(user.getEmail());
+    return new AuthResponse(token, user.getId(), user.getEmail(), user.getUsername(), user.getAvatarColor());
+}
 }
